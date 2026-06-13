@@ -1,0 +1,4 @@
+C:/Users/frantuxed/CLionProjects/Symulacja_Pulsara/zps2-dp/build/CMakeFiles/vectorSimLib.dir
+C:/Users/frantuxed/CLionProjects/Symulacja_Pulsara/zps2-dp/build/CMakeFiles/main.dir
+C:/Users/frantuxed/CLionProjects/Symulacja_Pulsara/zps2-dp/build/CMakeFiles/edit_cache.dir
+C:/Users/frantuxed/CLionProjects/Symulacja_Pulsara/zps2-dp/build/CMakeFiles/rebuild_cache.dir
