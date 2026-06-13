@@ -1,6 +1,0 @@
-# ninja log v7
-6	1021	8029641473973597	CMakeFiles/vectorSimLib.dir/src/Vector.cpp.obj	ca6c7f177067f4c5
-21	1049	8029641474123596	CMakeFiles/main.dir/src/main.cpp.obj	88d451babd7bd91
-14	1128	8029641474053610	CMakeFiles/vectorSimLib.dir/src/Simulation.cpp.obj	23d9a7b6f2e2d08f
-1128	1276	8029641485191005	libvectorSimLib.a	5be9020f4ddd51a
-1276	1430	8029641486670978	main.exe	1b3203cc1fb045ec

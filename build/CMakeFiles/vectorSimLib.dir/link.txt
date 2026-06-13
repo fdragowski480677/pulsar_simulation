@@ -1,0 +1,2 @@
+/usr/bin/ar qc libvectorSimLib.a CMakeFiles/vectorSimLib.dir/src/Vector.cpp.o CMakeFiles/vectorSimLib.dir/src/Simulation.cpp.o
+/usr/bin/ranlib libvectorSimLib.a
