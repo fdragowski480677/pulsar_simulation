@@ -36,8 +36,8 @@ int main(int argc, char* argv[]){
     double relTol         = (argc > 6) ? std::atof(argv[6]) : 1.e-9;
 
     Simulation sim(tStepInit, to2PN,
-                   /*m1*/1.387, /*m2*/1.441,
-                   /*r0*/746600.0, /*v0x*/0.0, /*v0y*/901.4,
+                   /*m1*/1.4414, /*m2*/1.3867,
+                   /*r0*/746600.0, /*v0x*/0.0, /*v0y*/901.6,
                    absTol, relTol);
 
     // Nagłówek (wiersz 1 to ludzki opis; wiersz 2 to wartości parametrów,
@@ -59,10 +59,12 @@ int main(int argc, char* argv[]){
 
     auto sample = [&](){
         std::cout << sim.GetTime() << "\t";
-        sim.PrintMag();
+        sim.PrintMag(); // Drukuje: |r| oraz |v| oddzielone tabulatorem
         std::cout << "\t" << sim.GetStep()
                   << "\t" << sim.EnergyNewtonian()
                   << "\t" << sim.AngMomNewtonian()
+                  << "\t" << sim.GetX()   // Kolumna 6 (x)
+                  << "\t" << sim.GetY()   // Kolumna 7 (y)
                   << "\n";
     };
 

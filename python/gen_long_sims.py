@@ -13,7 +13,7 @@ def set_v0y(val):
 
 def run():
     print("\n>>> Generowanie danych z ekstremalnie długich symulacji <<<")
-    set_v0y("901.4")
+    set_v0y("901.6")
     subprocess.run(["cmake", "--build", "."], cwd="../build", check=True)
     
     # -------------------------------------------------------------
@@ -48,4 +48,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-

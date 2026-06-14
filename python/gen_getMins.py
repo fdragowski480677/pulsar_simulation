@@ -10,7 +10,7 @@ def set_v0y(val):
 
 def run():
     print("\n>>> Generowanie danych pod getMins (Krótki spadek orbity) <<<")
-    set_v0y("901.4")
+    set_v0y("901.6")
     subprocess.run(["cmake", "--build", "."], cwd="../build", check=True)
     
     print("-> Obliczenia w C++ (To może chwilę potrwać)...")

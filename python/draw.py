@@ -45,10 +45,9 @@ fit_v_line = np.polyval(fit_v_coeffs, t)
 print("-> Generowanie: Wykres 1 (Separacja)...")
 plt.figure(figsize=(8, 6))
 plt.plot(t, r, color='#0072B2', label="Separacja r(t)", linewidth=1.0)
-plt.plot(t, fit_r_line, color='#D55E00', label=f"Trend liniowy (a={fit_r_coeffs[0]:.2e})", linewidth=2.5, linestyle='--')
 plt.xlabel("Czas [s]")
 plt.ylabel("|r| [km]")
-plt.title("Separacja w czasie + Dopasowanie liniowe")
+plt.title("Separacja w czasie")
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.savefig(os.path.join(outputDir, "wykres_1_separacja.pdf"), format='pdf', bbox_inches='tight')
@@ -58,10 +57,9 @@ plt.close()
 print("-> Generowanie: Wykres 2 (Prędkość)...")
 plt.figure(figsize=(8, 6))
 plt.plot(t, v, color='#009E73', label="Prędkość v(t)", linewidth=1.0)
-plt.plot(t, fit_v_line, color='#CC79A7', label=f"Trend liniowy (a={fit_v_coeffs[0]:.2e})", linewidth=2.5, linestyle='--')
 plt.xlabel("Czas [s]")
 plt.ylabel("|v| [km/s]")
-plt.title("Prędkość względna + Dopasowanie liniowe")
+plt.title("Prędkość względna")
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.savefig(os.path.join(outputDir, "wykres_2_predkosc.pdf"), format='pdf', bbox_inches='tight')
@@ -70,30 +68,51 @@ plt.close()
 # 3. Krok adaptacyjny
 print("-> Generowanie: Wykres 3 (Krok adaptacyjny)...")
 plt.figure(figsize=(8, 6))
-plt.semilogy(t[1:], dt[1:], color='#E69F00', linewidth=1.5, label="Krok dt")
+plt.semilogy(t[0:], dt[0:], color='#E69F00', linewidth=1.5, label="Krok dt")
 plt.xlabel("Czas [s]")
 plt.ylabel("Krok czasowy dt [s] (skala log)")
-plt.title("Praca algorytmu Dormand-Prince (bez 1. kroku)")
+plt.title("Praca algorytmu Dormand-Prince (krok adaptacyjny)")
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.savefig(os.path.join(outputDir, "wykres_3_krok_czasu.pdf"), format='pdf', bbox_inches='tight')
 plt.close()
 
-# 4. Ubytek energii
+# 4. Ubytek energii (Uwidocznienie fizycznych "schodków" w peryastronach)
 print("-> Generowanie: Wykres 4 (Ubytek energii)...")
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(10, 6))
 delta_E = E - E[0]
+
+# 1. Tło: Surowe oscylacje (zawierają efekty zachowawcze 1PN i 2PN)
+plt.plot(t, delta_E, color='#d62728', alpha=0.25, linewidth=1.0, label="Surowe oscylacje Newtonowskie $\\Delta E$")
+
+# 2. Główny trend dyssypacyjny: Łączymy punkty tylko w peryastronach
+if 'peaks_indices' in locals() and len(peaks_indices) > 1:
+    t_per_E = t[peaks_indices]
+    E_per = delta_E[peaks_indices]
+
+    # Rysujemy wyraźną linię pokazującą ubytek między orbitami
+    plt.plot(t_per_E, E_per, color='#800000', linewidth=2.5, marker='o', markersize=5, zorder=5,
+             label="Trwały ubytek energii (pomiary w peryastronach)")
+
+    # Rysujemy pionowe linie w momentach peryastronów, by udowodnić korelację
+    for idx, tp in enumerate(t_per_E):
+        if idx == 0:
+            plt.axvline(x=tp, color='black', linestyle=':', alpha=0.35, label="Moment przejścia przez peryastron")
+        else:
+            plt.axvline(x=tp, color='black', linestyle=':', alpha=0.35)
+
+# 3. Dodatkowo zostawiamy filtr splotowy dla porównania
 window = min(279, len(delta_E))
 if window > 1:
     smoothed_E = np.convolve(delta_E, np.ones(window)/window, mode='valid')
     t_smoothed = t[window-1:]
-    plt.plot(t_smoothed, smoothed_E, color='#800000', linewidth=3.0, label="Średni ubytek energii (Fale Grawitacyjne)")
-plt.plot(t, delta_E, color='#d62728', alpha=0.15, label="Surowe ΔE")
+    plt.plot(t_smoothed, smoothed_E, color='blue', linewidth=1.5, linestyle='--', alpha=0.7, label="Średni trend (Filtr splotowy)")
+
 plt.xlabel("Czas [s]")
-plt.ylabel("ΔE")
-plt.title("Ubytek energii mechanicznej w czasie (Przefiltrowany)")
+plt.ylabel("Względna zmiana energii $\\Delta E$")
+plt.title("Schodkowy ubytek energii mechanicznej wskutek emisji fal grawitacyjnych")
 plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-plt.legend()
+plt.legend(loc='lower left')
 plt.grid(True, linestyle='--', alpha=0.7)
 plt.savefig(os.path.join(outputDir, "wykres_4_ubytek_energii.pdf"), format='pdf', bbox_inches='tight')
 plt.close()
@@ -125,7 +144,7 @@ if has_spatial_data:
         line_prec = np.polyval(fit_prec, t_per)
 
         plt.figure(figsize=(8, 6))
-        plt.plot(t_per, angles_arcsec, 'ko', markersize=4, label="Położenie peryastronu")
+        plt.plot(t_per, angles_arcsec, 'ko-', markersize=4, label="Położenie peryastronu")
         plt.plot(t_per, line_prec, color='red', linewidth=2.0, linestyle='--', label=f"Trend liniowy (a={fit_prec[0]:.2e} ''/s)")
         plt.xlabel("Czas [s]")
         plt.ylabel("Położenie kątowe peryastronu ['']")
@@ -225,9 +244,13 @@ while (t_current + TExp < end_time):
     t_current = time_of_min
 
 if len(times_of_min) > 2:
-    T0 = times_of_min[1] - times_of_min[0]
+    # ZAMIAST BRAĆ STAŁĄ TExp, WYLICZAMY DOKŁADNY ŚREDNI OKRES Z SYMULACJI:
+    T0_exact = (times_of_min[-1] - times_of_min[0]) / (len(times_of_min) - 1)
+
     t0 = times_of_min[0]
-    shifts = [t_n - (t0 + n * T0) for n, t_n in enumerate(times_of_min)]
+
+    # Przesunięcie mierzymy względem faktycznego średniego okresu układu
+    shifts = [t_n - (t0 + n * T0_exact) for n, t_n in enumerate(times_of_min)]
     years = [t_n / (365.25 * 24 * 3600) for t_n in times_of_min]
 
     plt.figure(figsize=(9, 6))
@@ -240,3 +263,79 @@ if len(times_of_min) > 2:
     plt.legend(loc='lower left')
     plt.savefig(os.path.join(outputDir, "wykres_10_skumulowane_przesuniecie_periastronu.pdf"), format='pdf', bbox_inches='tight')
     plt.close()
+
+# =============================================================================
+# ALTERNATYWNE WYKRESY 11 i 12: ANALIZA TRENDÓW TYLKO W PERYASTRONACH
+# =============================================================================
+print("\n-> Uruchamianie analizy trendów w punktach zbliżeń (Peryastronach)...")
+
+# 1. Autonomiczne wyznaczenie indeksów peryastronów (wzmiankowane peaks)
+t_now_peaks = t[0]
+peaks_indices = []
+
+while (t_now_peaks + TExp < t[-1]):
+    tUp = min(t_now_peaks + 1.5 * TExp, t[-1])
+    start_idx = int(np.argmax(t > t_now_peaks + TExp / 2))
+    end_idx   = int(np.argmax(t >= tUp))
+    if end_idx <= start_idx:
+        break
+
+    seg = r[start_idx:end_idx]
+    minIdx = int(np.argmin(seg))
+    peaks_indices.append(start_idx + minIdx)
+    t_now_peaks = t[start_idx + minIdx]
+
+peaks_indices = np.array(peaks_indices)
+
+if len(peaks_indices) > 1:
+    # Ekstrakcja punktów zbliżeń
+    t_per = t[peaks_indices]
+    r_per = r[peaks_indices]
+    v_per = v[peaks_indices]
+
+    # Dopasowanie liniowe TYLKO DLA PUNKTÓW ZBLIŻEŃ
+    fit_r_coeffs_per = np.polyfit(t_per, r_per, 1)  # Współczynnik kierunkowy spadku r
+    line_r_per = np.polyval(fit_r_coeffs_per, t)
+
+    fit_v_coeffs_per = np.polyfit(t_per, v_per, 1)  # Współczynnik kierunkowy wzrostu v
+    line_v_per = np.polyval(fit_v_coeffs_per, t)
+
+    # --- Wykres 11: Separacja w peryastronach ---
+    print("-> Generowanie: Wykres 11 (Separacja w peryastronach)...")
+    plt.figure(figsize=(8, 6))
+    # Tło: pełna oscylacja separacji (jasnoniebieska, cienka linia dla kontekstu)
+    plt.plot(t, r, color='#0072B2', alpha=0.15, linewidth=0.5, label="Pełny przebieg r(t)")
+    # Punkty peryastronów
+    plt.scatter(t_per, r_per, color='#0072B2', s=20, zorder=3, label="Minima separacji (Peryastrony)")
+    # Linia trendu przechodząca przez całą symulację
+    plt.plot(t, line_r_per, color='#D55E00', linestyle='--', linewidth=2.5,
+             label=f"Trend periastronów (a={fit_r_coeffs_per[0]:.2e} km/s)")
+    plt.xlabel("Czas [s]")
+    plt.ylabel("|r| [km]")
+    plt.title("Ewolucja odległości w peryastronie (Spadek orbity)")
+    plt.legend(loc='upper right')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.savefig(os.path.join(outputDir, "wykres_11_separacja_peryastrony.pdf"), format='pdf', bbox_inches='tight')
+    plt.close()
+
+    # --- Wykres 12: Prędkość w peryastronach ---
+    print("-> Generowanie: Wykres 12 (Prędkość w peryastronach)...")
+    plt.figure(figsize=(8, 6))
+    # Tło: pełny profil prędkości (jasnozielona, cienka linia)
+    plt.plot(t, v, color='#009E73', alpha=0.15, linewidth=0.5, label="Pełny przebieg v(t)")
+    # Punkty maksymalnej prędkości w peryastronach
+    plt.scatter(t_per, v_per, color='#009E73', s=20, zorder=3, label="Maksima prędkości (w peryastronie)")
+    # Linia trendu wzrostu prędkości
+    plt.plot(t, line_v_per, color='#CC79A7', linestyle='--', linewidth=2.5,
+             label=f"Trend periastronów (a={fit_v_coeffs_per[0]:.2e} km/s²)")
+    plt.xlabel("Czas [s]")
+    plt.ylabel("|v| [km/s]")
+    plt.title("Wzrost prędkości maksymalnej w peryastronie")
+    plt.legend(loc='lower right')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.savefig(os.path.join(outputDir, "wykres_12_predkosc_peryastrony.pdf"), format='pdf', bbox_inches='tight')
+    plt.close()
+
+    print("-> Wykresy 11 i 12 zostały pomyślnie zapisane w folderze pomiarów.")
+else:
+    print("[BŁĄD]: Zbyt mało punktów zbliżeń (orbit), aby wyznaczyć trendy dla Wykresów 11 i 12!")

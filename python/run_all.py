@@ -24,7 +24,7 @@ def main():
 
     # Gęsta lista prędkości z Twojego pierwszego pytania
     velocities = ["890.0", "893.0", "896.0", "898.0", "899.0", "900.0",
-                  "901.0", "901.4", "902.0", "903.0", "904.0", "905.0", "910.0"]
+                  "901.0", "901.6", "902.0", "903.0", "904.0", "905.0", "910.0"]
 
     print("\n[KROK 1/3] Skanowanie prędkości v0y (Poszukiwanie orbity stabilnej)...")
     for v in velocities:
@@ -42,8 +42,8 @@ def main():
     subprocess.run(["python3", "drawScan.py"])
 
     # 2. Główna symulacja fizyczna dla stabilnej prędkości
-    print("\n[KROK 2/3] Generowanie długiej trajektorii referencyjnej (v0y = 901.4 km/s)...")
-    set_v0y("901.4")
+    print("\n[KROK 2/3] Generowanie długiej trajektorii referencyjnej (v0y = 901.6 km/s)...")
+    set_v0y("901.6")
     subprocess.run(["cmake", "--build", "."], cwd="../build", stdout=subprocess.DEVNULL, check=True)
 
     with open("../build/out.txt", "w") as out:

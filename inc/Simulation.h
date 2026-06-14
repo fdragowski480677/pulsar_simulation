@@ -52,9 +52,9 @@ class Simulation{
     Simulation(
         double tStep_   = 1.0,
         bool   to2PN_   = false,
-        double m1       = 1.387,
-        double m2       = 1.441,
-        double r0       = 746600.0,
+        double m1 = 1.4414,
+        double m2 = 1.3867, // Masa towarzysza
+        double r0 = 746600.0, // Peryastron
         double v0x      = 0.0,
         double v0y      = 900.0,
         double absTol_  = 1.e-6,

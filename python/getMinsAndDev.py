@@ -52,7 +52,6 @@ deviation = float(np.sqrt(np.mean((arr[1:] - arr[0])**2))) if len(arr) > 1 else 
 
 # Zapis do poprawnego folderu pomiarów (ścieżka zsynchronizowana z drawScan.py)
 devs_file_path = os.path.join(outputDir, "devs.txt")
-with open(devs_file_path, "a") as f:
-    print(paramRow, file=f)
-    print(len(minDistances), file=f)
-    print(deviation, "\n", file=f)
+with open(devs_file_path, "a", encoding="utf-8") as f_out:
+    v0y = paramRow[2] # Indeks 2 to prędkość początkowa z Twojego main.cpp
+    f_out.write(f"{v0y} {deviation}\n")

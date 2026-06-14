@@ -7,16 +7,22 @@ dataFile = "../build/out.txt"
 outputDir = "../pomiary_badania/"
 os.makedirs(outputDir, exist_ok=True)
 
+paramRow = []
 lines_data = []
+
 with open(dataFile, "r", encoding="utf-8") as f:
     for line in f:
         clean_line = line.strip()
         if clean_line.startswith("#") or not clean_line:
             continue
-        lines_data.append([float(x) for x in clean_line.split()])
+        # Pierwsza linia z liczbami to parametry (pomijamy z macierzy danych)
+        if len(paramRow) == 0:
+            paramRow = [float(x) for x in clean_line.split()]
+        else:
+            lines_data.append([float(x) for x in clean_line.split()])
 
-# Pomijamy pierwszy wiersz, bo to parametry konfiguracji
-data = np.array(lines_data)[1:]
+# Teraz tworzymy macierz tylko z poprawnych wierszy z danymi (8 kolumn)
+data = np.array(lines_data)
 times     = data[:,0]
 distances = data[:,1]
 endTime   = times[-1]

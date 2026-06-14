@@ -15,7 +15,7 @@ def set_v0y(val):
 def run():
     print("\n>>> Generowanie danych pod getMinsAndDevs (Skanowanie v0y) <<<")
     velocities = ["890.0", "893.0", "896.0", "898.0", "899.0", "900.0", 
-                  "901.0", "901.4", "902.0", "903.0", "904.0", "905.0", 
+                  "901.0", "901.6", "902.0", "903.0", "904.0", "905.0",
                   "906.0", "908.0", "910.0"]
     
     if os.path.exists("devs.txt"):
