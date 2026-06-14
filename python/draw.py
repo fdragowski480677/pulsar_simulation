@@ -1,10 +1,15 @@
 #!/usr/bin/python
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
+import os
 
-# Ścieżka do pliku z danymi
+# Ścieżka do pliku z danymi i folderu wynikowego
 dataFile = "../build/out.txt"
+outputDir = "../pomiary_badania/"
+os.makedirs(outputDir, exist_ok=True)
+
+# Globalna stała okresu orbitalnego - dostępna dla wszystkich wykresów
+TExp = 7.7519 * 3600  # Oczekiwany okres orbitalny PSR B1913+16 [s]
 
 print("-> Wczytywanie danych...")
 try:
@@ -14,7 +19,6 @@ except Exception as e:
     print(f"Błąd odczytu pliku: {e}")
     exit()
 
-# Wyciąganie standardowych kolumn
 t  = data[:,0]
 r  = data[:,1]
 v  = data[:,2]
@@ -22,258 +26,217 @@ dt = data[:,3]
 E  = data[:,4]
 L  = data[:,5]
 
-# Dynamiczne wykrywanie kolumn przestrzennych XY (dla jednego lub dwóch ciał)
-has_spatial_data = False
-if data.shape[1] >= 8:
-    try:
-        x1 = data[:,6]
-        y1 = data[:,7]
-        has_spatial_data = True
-        # Sprawdzamy czy są też współrzędne drugiego ciała
-        if data.shape[1] >= 10:
-            x2 = data[:,8]
-            y2 = data[:,9]
-            two_bodies = True
-        else:
-            two_bodies = False
-    except IndexError:
-        print("\n[OSTRZEŻENIE]: Brak pełnych kolumn współrzędnych w pliku out.txt!")
-        has_spatial_data = False
+try:
+    x = data[:,6]
+    y = data[:,7]
+    has_spatial_data = True
+except IndexError:
+    print("\n[OSTRZEŻENIE]: Brak kolumn X i Y w pliku out.txt! (Pomijanie wykresów 2D/3D)")
+    has_spatial_data = False
 
-# --- DOPASOWANIE LINIOWE (Dla trendów ogólnych) ---
+# --- DOPASOWANIE LINIOWE ---
 fit_r_coeffs = np.polyfit(t, r, 1)
 fit_r_line = np.polyval(fit_r_coeffs, t)
 
 fit_v_coeffs = np.polyfit(t, v, 1)
 fit_v_line = np.polyval(fit_v_coeffs, t)
 
-
-# =========================================================================
-# 1. Wykres: Separacja składników
-# =========================================================================
+# 1. Separacja
 print("-> Generowanie: Wykres 1 (Separacja)...")
-plt.figure(figsize=(8, 6.5))
-plt.plot(t, r, 'b-', label='Odległość chwilowa r(t)', alpha=0.7)
-plt.plot(t, fit_r_line, 'r--', label='Trend liniowy zmian')
-plt.xlabel('Czas symulacji [s]')
-plt.ylabel('Separacja ciał [km]')
-plt.title('Ewolucja odległości (separacji) składników układu podwójnego')
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='upper right')
-
-# Podpis pod wykresem
-podpis_1 = "Rys. 1: Zmiana odległości pomiędzy składnikami układu podwójnego w funkcji czasu symulacji wraz z naniesioną linią trendu sekularnego."
-plt.figtext(0.5, 0.02, podpis_1, ha="center", fontsize=9, style='italic', wrap=True)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig("wykres_1_separacja.pdf", format='pdf', bbox_inches='tight')
+plt.figure(figsize=(8, 6))
+plt.plot(t, r, color='#0072B2', label="Separacja r(t)", linewidth=1.0)
+plt.plot(t, fit_r_line, color='#D55E00', label=f"Trend liniowy (a={fit_r_coeffs[0]:.2e})", linewidth=2.5, linestyle='--')
+plt.xlabel("Czas [s]")
+plt.ylabel("|r| [km]")
+plt.title("Separacja w czasie + Dopasowanie liniowe")
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.savefig(os.path.join(outputDir, "wykres_1_separacja.pdf"), format='pdf', bbox_inches='tight')
 plt.close()
 
-
-# =========================================================================
-# 2. Wykres: Prędkość względna
-# =========================================================================
+# 2. Prędkość
 print("-> Generowanie: Wykres 2 (Prędkość)...")
-plt.figure(figsize=(8, 6.5))
-plt.plot(t, v, 'g-', label='Prędkość chwilowa v(t)', alpha=0.7)
-plt.plot(t, fit_v_line, 'r--', label='Trend liniowy zmian')
-plt.xlabel('Czas symulacji [s]')
-plt.ylabel('Prędkość względna [km/s]')
-plt.title('Ewolucja prędkości względnej składników układu')
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='upper right')
-
-# Podpis pod wykresem
-podpis_2 = "Rys. 2: Prędkość orbitalna składników układu podwójnego w funkcji czasu, obrazująca oscylacje pomiędzy peryastronem a apastronem."
-plt.figtext(0.5, 0.02, podpis_2, ha="center", fontsize=9, style='italic', wrap=True)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig("wykres_2_predkosc.pdf", format='pdf', bbox_inches='tight')
+plt.figure(figsize=(8, 6))
+plt.plot(t, v, color='#009E73', label="Prędkość v(t)", linewidth=1.0)
+plt.plot(t, fit_v_line, color='#CC79A7', label=f"Trend liniowy (a={fit_v_coeffs[0]:.2e})", linewidth=2.5, linestyle='--')
+plt.xlabel("Czas [s]")
+plt.ylabel("|v| [km/s]")
+plt.title("Prędkość względna + Dopasowanie liniowe")
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.savefig(os.path.join(outputDir, "wykres_2_predkosc.pdf"), format='pdf', bbox_inches='tight')
 plt.close()
 
+# 3. Krok adaptacyjny
+print("-> Generowanie: Wykres 3 (Krok adaptacyjny)...")
+plt.figure(figsize=(8, 6))
+plt.semilogy(t[1:], dt[1:], color='#E69F00', linewidth=1.5, label="Krok dt")
+plt.xlabel("Czas [s]")
+plt.ylabel("Krok czasowy dt [s] (skala log)")
+plt.title("Praca algorytmu Dormand-Prince (bez 1. kroku)")
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.savefig(os.path.join(outputDir, "wykres_3_krok_czasu.pdf"), format='pdf', bbox_inches='tight')
+plt.close()
 
-# =========================================================================
-# 3. Wykres: Efekt Hulse-Taylora (Przesunięcie periastronu)
-# =========================================================================
-print("-> Generowanie: Wykres 3 (Efekt Hulse-Taylora)...")
-T0 = 27906.98  # Okres orbitalny PSR B1913+16 w sekundach
+# 4. Ubytek energii
+print("-> Generowanie: Wykres 4 (Ubytek energii)...")
+plt.figure(figsize=(8, 6))
+delta_E = E - E[0]
+window = min(279, len(delta_E))
+if window > 1:
+    smoothed_E = np.convolve(delta_E, np.ones(window)/window, mode='valid')
+    t_smoothed = t[window-1:]
+    plt.plot(t_smoothed, smoothed_E, color='#800000', linewidth=3.0, label="Średni ubytek energii (Fale Grawitacyjne)")
+plt.plot(t, delta_E, color='#d62728', alpha=0.15, label="Surowe ΔE")
+plt.xlabel("Czas [s]")
+plt.ylabel("ΔE")
+plt.title("Ubytek energii mechanicznej w czasie (Przefiltrowany)")
+plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.savefig(os.path.join(outputDir, "wykres_4_ubytek_energii.pdf"), format='pdf', bbox_inches='tight')
+plt.close()
 
-# Anty-szczyty separacji (lokalne minima = periastrony)
-mean_dt = np.mean(dt) if len(dt) > 0 else 1.0
-min_dist_peaks = int(T0 / mean_dt * 0.5) if mean_dt < T0 else 10
-peaks, _ = find_peaks(-r, distance=max(min_dist_peaks, 5))
+if has_spatial_data:
+    # 5. Precesja
+    print("-> Generowanie: Wykres 5 (Precesja)...")
+    t_now = t[0]
+    peaks = []
 
-if len(peaks) > 1:
-    timesOfMin = []
-    # Wygładzanie parabolą dla uniknięcia "piły" (błędu numerycznego kroku dyskretnego)
-    for idx in peaks:
-        if 0 < idx < len(t) - 1:
-            t_seg = t[idx-1:idx+2]
-            r_seg = r[idx-1:idx+2]
-            poly = np.polyfit(t_seg, r_seg, 2)
-            t_exact = -poly[1] / (2.0 * poly[0]) if poly[0] != 0 else t[idx]
-            timesOfMin.append(t_exact)
-    
-    if len(timesOfMin) > 1:
-        shifts = []
-        years = []
-        t0_orbit = timesOfMin[0]
-        
-        for n, t_n in enumerate(timesOfMin):
-            t_theoretical = t0_orbit + n * T0
-            shift = t_n - t_theoretical
-            shifts.append(shift)
-            years.append(t_n / (365.25 * 24 * 3600))
-            
-        plt.figure(figsize=(8, 6.5))
-        plt.plot(years, shifts, 'ro', markersize=4, label='Punkty pomiarowe (DP5)')
-        plt.plot(years, shifts, 'b-', linewidth=1.2, alpha=0.7, label='Trend paraboliczny (2.5PN)')
-        plt.xlabel('Czas od początku symulacji [lata]')
-        plt.ylabel('Skumulowane przesunięcie periastronu [s]')
-        plt.title('Skumulowane przesunięcie fazy orbitalnej układu')
-        plt.grid(True, linestyle=':', alpha=0.6)
-        plt.legend(loc='lower left')
-        
-        podpis_3 = "Rys. 3: Skumulowane opóźnienie czasu przejścia przez periastron wywołane stratą energii układu przez emisję fal grawitacyjnych."
-        plt.figtext(0.5, 0.02, podpis_3, ha="center", fontsize=9, style='italic', wrap=True)
-        plt.subplots_adjust(bottom=0.15)
-        plt.savefig("wykres_3_hulse_taylor.pdf", format='pdf', bbox_inches='tight')
+    while (t_now + TExp < t[-1]):
+        tUp = min(t_now + 1.5*TExp, t[-1])
+        start_idx = int(np.argmax(t > t_now + TExp/2))
+        end_idx   = int(np.argmax(t >= tUp))
+        if end_idx <= start_idx: break
+
+        seg = r[start_idx:end_idx]
+        minIdx = int(np.argmin(seg))
+        peaks.append(start_idx + minIdx)
+        t_now = t[start_idx + minIdx]
+
+    peaks = np.array(peaks)
+
+    if len(peaks) > 1:
+        t_per = t[peaks]
+        angles_rad = np.unwrap(np.arctan2(y[peaks], x[peaks]))
+        angles_arcsec = np.degrees(angles_rad) * 3600.0
+        fit_prec = np.polyfit(t_per, angles_arcsec, 1)
+        line_prec = np.polyval(fit_prec, t_per)
+
+        plt.figure(figsize=(8, 6))
+        plt.plot(t_per, angles_arcsec, 'ko', markersize=4, label="Położenie peryastronu")
+        plt.plot(t_per, line_prec, color='red', linewidth=2.0, linestyle='--', label=f"Trend liniowy (a={fit_prec[0]:.2e} ''/s)")
+        plt.xlabel("Czas [s]")
+        plt.ylabel("Położenie kątowe peryastronu ['']")
+        plt.title("Precesja peryastonów w czasie (Metoda Oknowa)")
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.savefig(os.path.join(outputDir, "wykres_5_precesja.pdf"), format='pdf', bbox_inches='tight')
         plt.close()
 
-
-# =========================================================================
-# 4. Wykres: Adaptacyjny krok czasowy dt
-# =========================================================================
-print("-> Generowanie: Wykres 4 (Krok czasowy dt)...")
-plt.figure(figsize=(8, 6.5))
-plt.plot(t, dt, 'm-', linewidth=1, label='Krok czasowy dt')
-plt.xlabel('Czas symulacji [s]')
-plt.ylabel('Rozmiar kroku dt [s]')
-plt.title('Historia adaptacji kroku czasowego integratora')
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='upper right')
-
-# Podpis pod wykresem
-podpis_4 = "Rys. 4: Przebieg automatycznych zmian wielkości kroku integratora DP5. Wyraźnie widoczne drastyczne zmniejszanie kroku w periastronie."
-plt.figtext(0.5, 0.02, podpis_4, ha="center", fontsize=9, style='italic', wrap=True)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig("wykres_4_krok_dt.pdf", format='pdf', bbox_inches='tight')
-plt.close()
-
-
-# =========================================================================
-# 5. Wykres: Moment pędu L
-# =========================================================================
-print("-> Generowanie: Wykres 5 (Moment pędu)...")
-plt.figure(figsize=(8, 6.5))
-L0 = L[0] if L[0] != 0 else 1e-10
-relative_L_error = np.abs((L - L0) / L0)
-plt.plot(t, relative_L_error, 'c-', label=r'$|L(t) - L_0| / L_0$')
-plt.yscale('log')
-plt.xlabel('Czas symulacji [s]')
-plt.ylabel('Błąd względny momentu pędu')
-plt.title('Zachowanie całkowitego momentu pędu układu')
-plt.grid(True, linestyle=':', alpha=0.6, which="both")
-plt.legend(loc='upper left')
-
-# Podpis pod wykresem
-podpis_5 = "Rys. 5: Względny błąd zachowania momentu pędu w skali logarytmicznej, demonstrujący stabilność geometryczną integratora numerycznego."
-plt.figtext(0.5, 0.02, podpis_5, ha="center", fontsize=9, style='italic', wrap=True)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig("wykres_5_moment_pedu.pdf", format='pdf', bbox_inches='tight')
-plt.close()
-
-
-# =========================================================================
-# 6. Wykres: Trajektoria 2D
-# =========================================================================
-if has_spatial_data:
-    print("-> Generowanie: Wykres 6 (Orbita 2D)...")
-    plt.figure(figsize=(7.5, 7.5))
-    
-    if two_bodies:
-        plt.plot(x1, y1, 'r-', label='Gwiazda neutronowa 1', alpha=0.8)
-        plt.plot(x2, y2, 'b-', label='Gwiazda neutronowa 2', alpha=0.8)
-        plt.plot(0, 0, 'kx', label='Barycentrum', markersize=8)
-    else:
-        plt.plot(x1, y1, 'b-', label='Trajektoria względna m1-m2')
-        plt.plot(0, 0, 'ro', label='Centrum siły')
-        
-    plt.xlabel('Położenie X [km]')
-    plt.ylabel('Położenie Y [km]')
-    plt.title('Ruch ciał w płaszczyźnie orbitalnej (Widok 2D)')
-    plt.grid(True, linestyle=':', alpha=0.6)
+    # 6. Orbita względna 2D
+    print("-> Generowanie: Wykres 6 (Orbita względna XY)...")
+    plt.figure(figsize=(8, 8))
+    plt.plot(x, y, color='blue', linewidth=0.5, alpha=0.8, label="Orbita wzajemna")
+    plt.scatter([0], [0], color='red', marker='*', s=150, zorder=5, label="Ognisko")
+    plt.xlabel("Położenie x [km]")
+    plt.ylabel("Położenie y [km]")
+    plt.title("Względna orbita ciał w płaszczyźnie")
     plt.axis('equal')
-    plt.legend(loc='upper right')
-    
-    podpis_6 = "Rys. 6: Rzut dwuwymiarowy zamkniętych (lub powoli zacieśniających się) orbit składników układu podwójnego w płaszczyźnie XY."
-    plt.figtext(0.5, 0.02, podpis_6, ha="center", fontsize=9, style='italic', wrap=True)
-    plt.subplots_adjust(bottom=0.15)
-    plt.savefig("wykres_6_orbita_2D.pdf", format='pdf', bbox_inches='tight')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    plt.savefig(os.path.join(outputDir, "wykres_6_orbita_wzgledna.pdf"), format='pdf', bbox_inches='tight')
     plt.close()
 
+    # 8. Orbita obu ciał wokół środka masy (Barycentrum)
+    print("-> Generowanie: Wykres 8 (Orbity Barycentryczne)...")
+    m1, m2 = 1.387, 1.441
+    M_total = m1 + m2
+    x1, y1 = (m2 / M_total) * x, (m2 / M_total) * y
+    x2, y2 = -(m1 / M_total) * x, -(m1 / M_total) * y
 
-# =========================================================================
-# 7. Wykres: Błąd względny energii
-# =========================================================================
-print("-> Generowanie: Wykres 7 (Błąd energii)...")
-plt.figure(figsize=(8, 6.5))
-E0 = E[0] if E[0] != 0 else 1e-10
-relative_energy_error = np.abs((E - E0) / E0)
-plt.plot(t, relative_energy_error, 'r-', label=r'$|E(t) - E_0| / E_0$')
-plt.yscale('log')
-plt.xlabel('Czas symulacji [s]')
-plt.ylabel('Błąd względny energii')
-plt.title('Zachowanie całkowitej energii układu')
-plt.grid(True, linestyle=':', alpha=0.6, which="both")
-plt.legend(loc='upper left')
+    plt.figure(figsize=(8, 8))
+    plt.plot(x1, y1, color='purple', linewidth=0.6, alpha=0.8, label=f"Pulsar 1 (m={m1} Mo)")
+    plt.plot(x2, y2, color='orange', linewidth=0.6, alpha=0.8, label=f"Pulsar 2 (m={m2} Mo)")
+    plt.scatter([0], [0], color='black', marker='+', s=100, zorder=5, label="Barycentrum (Środek Masy)")
+    plt.xlabel("Położenie x [km]")
+    plt.ylabel("Położenie y [km]")
+    plt.title("Rzeczywiste orbity pulsarów wokół środka masy")
+    plt.axis('equal')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
+    plt.savefig(os.path.join(outputDir, "wykres_8_orbity_barycentrum.pdf"), format='pdf', bbox_inches='tight')
+    plt.close()
 
-# Podpis pod wykresem
-podpis_7 = "Rys. 7: Ewolucja względnego błędu energii całkowitej układu w czasie, obrazująca precyzję i bezbłędność energetyczną symulacji."
-plt.figtext(0.5, 0.02, podpis_7, ha="center", fontsize=9, style='italic', wrap=True)
-plt.subplots_adjust(bottom=0.15)
-plt.savefig("wykres_7_blad_energii.pdf", format='pdf', bbox_inches='tight')
-plt.close()
-
-
-# =========================================================================
-# 9. Wykres: Perspektywa trójwymiarowa (3D)
-# =========================================================================
-if has_spatial_data:
-    print("-> Generowanie: Wykres 9 (Orbita 3D z perspektywą)...")
-    fig = plt.figure(figsize=(8, 7.5))
+    # 9. Orbita 3D z perspektywy
+    print("-> Generowanie: Wykres 9 (Orbita 3D perspektywa)...")
+    fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection='3d')
-    
-    # Dodajemy sztuczną oś Z = 0 dla pełnej wizualizacji przestrzennej 3D
-    z1 = np.zeros_like(x1)
-    
-    if two_bodies:
-        z2 = np.zeros_like(x2)
-        ax.plot(x1, y1, z1, 'r-', label='Gwiazda 1', alpha=0.8)
-        ax.plot(x2, y2, z2, 'b-', label='Gwiazda 2', alpha=0.8)
-        max_val = max(np.max(np.abs(x1)), np.max(np.abs(x2)), np.max(np.abs(y1)), np.max(np.abs(y2)))
-    else:
-        ax.plot(x1, y1, z1, 'b-', label='Ruch względny')
-        max_val = max(np.max(np.abs(x1)), np.max(np.abs(y1)))
-        
-    # Pełne opisy osi przestrzennych X, Y, Z
-    ax.set_xlabel('Położenie X [km]', labelpad=10)
-    ax.set_ylabel('Położenie Y [km]', labelpad=10)
-    ax.set_zlabel('Położenie Z [km]', labelpad=10)
-    ax.set_title('Układ podwójny zwizualizowany w przestrzeni 3D')
-    
-    # Symetryczne, poprawne skalowanie pudełka wykresu 3D
+    z1, z2 = np.zeros_like(x1), np.zeros_like(x2)
+    step_3d = max(1, len(x1) // 5000)
+    ax.plot(x1[::step_3d], y1[::step_3d], z1[::step_3d], color='purple', linewidth=0.8, label=f"Pulsar 1")
+    ax.plot(x2[::step_3d], y2[::step_3d], z2[::step_3d], color='orange', linewidth=0.8, label=f"Pulsar 2")
+    ax.scatter([0], [0], [0], color='black', marker='+', s=100, label="Barycentrum")
+    ax.view_init(elev=25, azim=-45)
+    ax.set_xlabel('Położenie X [km]')
+    ax.set_ylabel('Położenie Y [km]')
+    ax.set_zlabel('Położenie Z [km]')
+    ax.set_title('Układ podwójny z perspektywy 3D (Z = 0)')
+    max_val = max(np.max(np.abs(x1)), np.max(np.abs(x2)), np.max(np.abs(y1)), np.max(np.abs(y2)))
     limit = max_val * 1.15
     ax.set_xlim(-limit, limit)
     ax.set_ylim(-limit, limit)
     ax.set_zlim(-limit, limit)
     ax.set_box_aspect([1, 1, 1])
-    
-    ax.legend(loc='upper right')
-    
-    podpis_9 = "Rys. 9: Trójwymiarowa prezentacja orbit wokół wspólnego środka masy (barycentrum) z uwzględnieniem osi prostopadłej Z."
-    plt.figtext(0.5, 0.02, podpis_9, ha="center", fontsize=9, style='italic', wrap=True)
-    
-    plt.savefig("wykres_9_orbita_3D_perspektywa.pdf", format='pdf', bbox_inches='tight')
+    ax.legend()
+    plt.savefig(os.path.join(outputDir, "wykres_9_orbita_3D_perspektywa.pdf"), format='pdf', bbox_inches='tight')
     plt.close()
 
-print("-> Gotowe! Wszystkie wykresy zostały wygenerowane z podpisami.")
+# 7. Błąd energii
+print("-> Generowanie: Wykres 7 (Błąd energii)...")
+plt.figure(figsize=(8, 6))
+E_0 = E[0] if E[0] != 0 else 1e-10
+relative_energy_error = np.abs((E - E_0) / E_0)
+plt.plot(t, relative_energy_error, color='black', linewidth=0.5)
+plt.xlabel("Czas [s]")
+plt.ylabel("Względny błąd energii |(E - E0) / E0|")
+plt.title("Względny błąd zachowania energii (DP5(4))")
+plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.savefig(os.path.join(outputDir, "wykres_7_blad_energii_wzgledny.pdf"), format='pdf', bbox_inches='tight')
+plt.close()
 
+# 10. Skumulowane przesunięcie periastronu
+print("-> Generowanie: Wykres 10 (Skumulowane przesunięcie czasu periastronu)...")
+times_of_min = [t[0]]
+t_current = 0.0
+end_time = t[-1]
+
+while (t_current + TExp < end_time):
+    t_up = min(t_current + 1.5 * TExp, end_time)
+    start_index = int(np.argmax(t > t_current + TExp / 2))
+    end_index = int(np.argmax(t >= t_up))
+    if end_index <= start_index: break
+    seg = r[start_index:end_index]
+    min_idx = int(np.argmin(seg))
+    time_of_min = float(t[start_index + min_idx])
+    times_of_min.append(time_of_min)
+    t_current = time_of_min
+
+if len(times_of_min) > 2:
+    T0 = times_of_min[1] - times_of_min[0]
+    t0 = times_of_min[0]
+    shifts = [t_n - (t0 + n * T0) for n, t_n in enumerate(times_of_min)]
+    years = [t_n / (365.25 * 24 * 3600) for t_n in times_of_min]
+
+    plt.figure(figsize=(9, 6))
+    plt.plot(years, shifts, 'ro', markersize=4, label='Dane z symulacji (DP5)')
+    plt.plot(years, shifts, 'b-', linewidth=1.5, alpha=0.7, label='Trend ewolucyjny (2.5PN)')
+    plt.xlabel('Czas od początku symulacji [lata]')
+    plt.ylabel('Skumulowane przesunięcie czasu periastronu [s]')
+    plt.title('Skumulowane przesunięcie fazy orbitalnej układu Hulse-Taylora')
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.legend(loc='lower left')
+    plt.savefig(os.path.join(outputDir, "wykres_10_skumulowane_przesuniecie_periastronu.pdf"), format='pdf', bbox_inches='tight')
+    plt.close()

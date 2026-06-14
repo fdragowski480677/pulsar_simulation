@@ -1,47 +1,58 @@
 #!/usr/bin/python
 import numpy as np
-import sys
+import os
 
 dataFile = "../build/out.txt"
+outputDir = "../pomiary_badania/"
+os.makedirs(outputDir, exist_ok=True)
 
-try:
-    data = np.loadtxt(dataFile, comments="#", skiprows=3)
-except Exception as e:
-    print(f"Błąd odczytu pliku: {e}")
-    exit()
+# Pancerne, bezbłędne czytanie parametrów i danych bez wywoływania UserWarning z loadtxt
+paramRow = []
+lines_data = []
 
+with open(dataFile, "r", encoding="utf-8") as f:
+    for line in f:
+        clean_line = line.strip()
+        if clean_line.startswith("#") or not clean_line:
+            continue
+        # Pierwsza linia bez '#' to parametry symulacji
+        if len(paramRow) == 0:
+            paramRow = [float(x) for x in clean_line.split()]
+        else:
+            lines_data.append([float(x) for x in clean_line.split()])
+
+data = np.array(lines_data)
 times     = data[:,0]
 distances = data[:,1]
 endTime   = times[-1]
 
-TExp = 25000.0
+TExp = 7.7519 * 3600
 t = 0.0
 
-timesOfMin   = []
-minDistances = []
+timesOfMin   = [times[0]]
+minDistances = [distances[0]]
 
-# Niezawodne szukanie peryastrów metodą oknową
-t_curr = times[0]
-while t_curr + TExp < endTime:
-    tUp = min(t_curr + 1.5*TExp, endTime)
-    idx_start = np.searchsorted(times, t_curr + TExp*0.5)
-    idx_end = np.searchsorted(times, tUp)
-    if idx_end <= idx_start: break
-    
-    seg = distances[idx_start:idx_end]
-    actual_idx = idx_start + int(np.argmin(seg))
-    timesOfMin.append(times[actual_idx])
-    minDistances.append(distances[actual_idx])
-    t_curr = times[actual_idx]
+while (t + TExp < endTime):
+    tUp = min(t + 1.5*TExp, endTime)
+    start_index = int(np.argmax(times > t + TExp/2))
+    end_index   = int(np.argmax(times >= tUp))
+    if end_index <= start_index: break
+
+    seg = distances[start_index:end_index]
+    minIdx = int(np.argmin(seg))
+    minDistance = float(seg[minIdx])
+    timeOfMin   = float(times[start_index + minIdx])
+
+    timesOfMin.append(timeOfMin)
+    minDistances.append(minDistance)
+    t = timeOfMin
 
 arr = np.array(minDistances)
 deviation = float(np.sqrt(np.mean((arr[1:] - arr[0])**2))) if len(arr) > 1 else 0.0
 
-# Odczytujemy testowaną prędkość z argumentów wywołania skryptu
-v0y = float(sys.argv[1]) if len(sys.argv) > 1 else 0.0
-print(f"Deviation dla v0y={v0y}: {deviation:.6f}")
-
-# Zapisujemy idealnie czyste 2 kolumny dla drawScan.py
-with open("devs.txt", "a") as f:
-    f.write(f"{v0y} {deviation}\n")
-
+# Zapis do poprawnego folderu pomiarów (ścieżka zsynchronizowana z drawScan.py)
+devs_file_path = os.path.join(outputDir, "devs.txt")
+with open(devs_file_path, "a") as f:
+    print(paramRow, file=f)
+    print(len(minDistances), file=f)
+    print(deviation, "\n", file=f)

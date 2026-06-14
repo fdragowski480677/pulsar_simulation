@@ -89,6 +89,9 @@ class Simulation{
     // aby trafić dokładnie w tEnd.
     void Advance(double tEnd);
 
+    double GetX() const { return X.GetX(); } // Jeśli w klasie Vector nazwałeś to GetX()
+    double GetY() const { return X.GetY(); }
+
     // Akcesory
     double GetTime() const { return tNow; }
     double GetStep() const { return tStep; }

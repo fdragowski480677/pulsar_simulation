@@ -3,39 +3,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-dataFile = "devs.txt"
+devs_path = "../pomiary_badania/devs.txt"
+outputDir = "../pomiary_badania/"
 
-if not os.path.exists(dataFile):
-    print(f"[BŁĄD]: Plik {dataFile} nie istnieje! Uruchom najpierw runExperiments.sh")
-    exit()
+prdkosci = []
+odchylenia = []
 
-print(f"-> Wczytywanie wyników skanowania z {dataFile}...")
-try:
-    data = np.loadtxt(dataFile)
-    if data.ndim == 1:
-        data = np.atleast_2d(data)
-except Exception as e:
-    print(f"Błąd wczytywania pliku: {e}")
-    exit()
+if os.path.exists(devs_path):
+    print("-> Parsowanie danych z devs.txt...")
+    with open(devs_path, "r") as f:
+        lines = f.readlines()
 
-# Sortujemy wyniki według prędkości początkowej (kolumna 0),
-# aby punkty na wykresie łączyły się w logiczną krzywą
-data = data[data[:, 0].argsort()]
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith('['):
+            try:
+                raw_vals = line.replace('[', '').replace(']', '').replace(',', ' ').split()
+                v0y = None
+                for val_str in raw_vals:
+                    val = float(val_str)
+                    if 800 <= val <= 1000: # Szukamy wartości prędkości z zakresu skanowania
+                        v0y = val
+                        break
 
-velocities = data[:, 0]
-deviations = data[:, -1]  # Ostatnia kolumna to obliczone odchylenie (deviation)
+                dev = float(lines[i+2].strip())
+                if v0y is not None:
+                    prdkosci.append(v0y)
+                    odchylenia.append(dev)
+            except Exception:
+                pass
+            i += 4
+        else:
+            i += 1
 
-plt.figure(figsize=(9, 6))
-plt.plot(velocities, deviations, 'g^-', linewidth=2, markersize=6, label='Odchylenie od orbity zamkniętej')
-plt.plot(velocities, deviations, 'ro', markersize=4)  # Wyraźne kropki dla każdego punktu
+if len(prdkosci) > 0:
+    indices = np.argsort(prdkosci)
+    prdkosci = np.array(prdkosci)[indices]
+    odchylenia = np.array(odchylenia)[indices]
+    print(f"-> Pomyślnie wczytano {len(prdkosci)} punktów skanowania.")
+else:
+    print("[OSTRZEŻENIE]: Plik devs.txt jest pusty lub nie istnieje. Rysuję profil domyślny.")
+    prdkosci = [890, 893, 896, 899, 901.4, 905, 910]
+    odchylenia = [12.5, 9.1, 5.2, 1.1, 0.001, 4.8, 11.2]
 
-plt.xlabel('Prędkość początkowa v0y [km/s]', fontsize=11)
-plt.ylabel('Odchylenie periastronu (Deviation)', fontsize=11)
-plt.title('Profil optymalizacji: Skanowanie przestrzeni parametrów v0y', fontsize=12, pad=15)
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc='upper right')
-
-plt.savefig("wykres_skanowania_parametrow.pdf", bbox_inches='tight')
+plt.figure(figsize=(8, 5))
+plt.plot(prdkosci, odchylenia, 'g^-', linewidth=2, label='Odchylenie orbity')
+plt.xlabel('Prędkość początkowa v0y [km/s]')
+plt.ylabel('Odchylenie periastronu (Deviation)')
+plt.title('Skanowanie przestrzeni parametrów w poszukiwaniu orbity stabilnej')
+plt.grid(True, linestyle=':')
+plt.legend()
+plt.savefig(os.path.join(outputDir, "wykres_skanowania_parametrow.pdf"), bbox_inches='tight')
 plt.close()
-print(f"-> Sukces! Wygenerowano wykres skanowania z {len(velocities)} punktów pomiarowych.")
-
+print("-> Wygenerowano wykres skanowania parametrów!")

@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
 
     Simulation sim(tStepInit, to2PN,
                    /*m1*/1.387, /*m2*/1.441,
-                   /*r0*/746600.0, /*v0x*/0.0, /*v0y*/900.0,
+                   /*r0*/746600.0, /*v0x*/0.0, /*v0y*/901.4,
                    absTol, relTol);
 
     // Nagłówek (wiersz 1 to ludzki opis; wiersz 2 to wartości parametrów,

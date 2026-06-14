@@ -11,6 +11,9 @@ class Vector
             y = y_;
         }
 
+        double GetX() const { return x; } // zakładając, że prywatna zmienna to 'x'
+        double GetY() const { return y; } // zakładając, że prywatna zmienna to 'y'
+
         Vector& operator+=(const Vector&);
         Vector  operator+(const Vector&) const;
         Vector  operator-(const Vector&) const;
