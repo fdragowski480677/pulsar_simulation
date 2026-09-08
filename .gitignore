@@ -1,0 +1,20 @@
+# Build and CMake
+.clinerules
+CMakeCache.txt
+
+# Python and C++ Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Simulation Output Data
+*.txt
+*.dat
+!CMakeLists.txt
+
+# Generated Plots and Images
+pomiary_badania
+*.png
+*.jpg
+*.pdf
+*.svg
